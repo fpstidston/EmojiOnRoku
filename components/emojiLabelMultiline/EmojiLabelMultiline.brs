@@ -7,7 +7,11 @@ sub init()
     m.top.observeField("color", "updateComponents")
     m.top.observeField("lineSpacing", "updateComponents")
 
-    setText()
+    ' If the emoji size is not set initiliase to a sample of the font height
+    if m.top.emojiSize = 0
+        label = createLabel("Sample")
+        m.top.emojiSize = label.boundingRect().height
+    end if
 end sub
 
 ' Updates only fields that have no effect on layout
@@ -93,10 +97,6 @@ function createLabel(withText as String)
     label.color = m.top.color
     if m.top.font <> Invalid
         label.font = m.top.font
-    end if
-
-    if m.top.emojiSize = 0
-        m.top.emojiSize = label.boundingRect().height
     end if
 
     return label
