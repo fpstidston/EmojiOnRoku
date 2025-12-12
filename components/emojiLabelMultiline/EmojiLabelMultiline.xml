@@ -6,8 +6,8 @@
 Use as an ordinary Scenegraph Label node, with the following exceptions:
 * You should set an explict height on this node, otherwise the emojis will default to their 72x72 size. 
 * This label can not handle multi-line text. You can only use EmojiLabel for single lines at a time. -->
-<component name="EmojiLabel" extends="Group">
-    <script type="text/brightscript" uri="EmojiLabel.brs" />
+<component name="EmojiLabelMultiline" extends="Group">
+    <script type="text/brightscript" uri="EmojiLabelMultiline.brs" />
     <script type="text/brightscript" uri="pkg:/source/util/Regex.brs" />
     <script type="text/brightscript" uri="pkg:/source/util/Utilities.brs" />
 

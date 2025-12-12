@@ -117,10 +117,6 @@ function createPoster(uri as String)
     if m.top.emojiSize > 0
         poster.width = m.top.emojiSize
         poster.height = m.top.emojiSize
-    ' Then use height if set
-    else if m.top.height > 0
-        poster.width = m.top.height
-        poster.height = m.top.height
     end if
 
     return poster
