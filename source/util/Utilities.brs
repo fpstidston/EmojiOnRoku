@@ -83,7 +83,7 @@ end function
 ' Parameter: size: The size for the emoji. Default is "72x72"
 ' Returns: Returns valid URI to retreive the specified emoji from the Twemoji project.
 function toURI(pointName as String, size = "72x72" as String) as String
-    template = "https://twemoji.maxcdn.com/v/latest/{size}/{point}.png"
+    template = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/{size}/{point}.png"
 
     return template.replace("{size}", size).replace("{point}", pointName)
 end function
