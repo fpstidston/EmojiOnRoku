@@ -3,6 +3,10 @@
 sub init()
     m.components = m.top.findNode("layout")
     m.top.observeField("text", "setText")
+    m.top.observeField("width", "setText")
+    m.top.observeField("font", "setText")
+    m.top.observeField("maxLines", "setText")
+    m.top.observeField("emojiSize", "setText")
 
     m.top.observeField("color", "updateComponents")
     m.top.observeField("lineSpacing", "updateComponents")
@@ -39,13 +43,13 @@ function setText()
     ' This tracks the horizontal and vertical progress of the function
     cursor = {
         currWidth: 0
-        currRow: Invalid
+        currLine: Invalid
     }
 
     resetComponents()
 
     if labelText <> ""
-        cursor.currRow = createRow(cursor.currRow)
+        cursor.currLine = createLine(cursor.currLine)
         ' Check for emojis in this text
         emojiRegex = createObject("roRegex", regex(), "m")
         matches = emojiRegex.matchAll(labelText)
@@ -117,40 +121,54 @@ function createPoster(uri as String)
 end function
 
 ' Create a new line in the multi-line label
-function createRow(currRow)
+function createLine(currLine)
     numLines = m.components.getChildCount()
 
     ' If a maximum number of lines set and is reached
     if m.top.maxLines <> 0  and numLines = m.top.maxLines
         ' Replace last node with an ellipsis
+        lastNodeIndex = currLine.getChildCount() - 1
+        if lastNodeIndex >= 0
+            lastNode = currLine.getChild(lastNodeIndex)
+            currLine.removeChild(lastNode)
+        end if
         ellipsis = createLabel("…")
-        lastNodeIndex = currRow.getChildCount() - 1
-        lastNode = currRow.getChild(lastNodeIndex)
-        currRow.removeChild(lastNode)
-        currRow.appendChild(ellipsis)
+        currLine.appendChild(ellipsis)
 
         return Invalid
     end if
 
-    ' Create the new row
-    row = CreateObject("roSGNode", "LayoutGroup")
-    row.layoutDirection="horiz"
-    row.vertAlignment="center"
-    m.components.AppendChild(row)
+    ' Create the new line
+    line = CreateObject("roSGNode", "LayoutGroup")
+    line.layoutDirection="horiz"
+    line.vertAlignment="center"
+    m.components.AppendChild(line)
 
-    return row
+    return line
 end function
 
 ' Arrange the words horizontally with breaks to new line
 function distributeWords(text, cursor)
-    labelTextArr = text.split(" ")
-    for each leftWord in labelTextArr
-        labelNode = createLabel(leftWord + " ")
-        cursor = updateCursor(cursor, labelNode)
-        if cursor = Invalid
-            return Invalid
+    regex = CreateObject("roRegex", "\n", "gm")
+    replacedNewlines = regex.replaceAll(text ," __NEW_LINE__ ")
+
+    wordsArr = replacedNewlines.split(" ")
+    for each word in wordsArr
+        if word = "__NEW_LINE__"
+            cursor.currLine = createLine(cursor.currLine)
+            cursor.currWidth = 0
+            if cursor.currLine = Invalid
+                return Invalid
+            end if
+        else
+            labelNode = createLabel(word + " ")
+            cursor = updateCursor(cursor, labelNode)
+            if cursor = Invalid
+                return Invalid
+            end if
         end if
-    end for
+
+    end for 
 
     return cursor
 end function
@@ -159,15 +177,17 @@ end function
 function updateCursor(cursor, node)
     width = node.boundingRect().width
     cursor.currWidth += width
+    
     if cursor.currWidth > m.top.width and m.top.width > 0
+        cursor.currLine = createLine(cursor.currLine)
         cursor.currWidth = width
-        cursor.currRow = createRow(cursor.currRow)
-        if cursor.currRow = Invalid
+        if cursor.currLine = Invalid
             return Invalid
         end if
     end if
 
-    cursor.currRow.appendChild(node)
+    cursor.currLine.appendChild(node)
+
     return cursor
 end function
 
