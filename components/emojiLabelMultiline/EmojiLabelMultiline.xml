@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright Kasper Gammeltoft and other contributors. Licensed under MIT
+    https://github.com/KasperGam/EmojiOnRoku/blob/main/LICENSE -->
+
+<!-- EmojiLabel- Component used to display text that includes emoji in Scenegraph. 
+Use as an ordinary Scenegraph Label node, with the following exceptions:
+* You should set an explict height on this node, otherwise the emojis will default to their 72x72 size. 
+* This label can not handle multi-line text. You can only use EmojiLabel for single lines at a time. -->
+<component name="EmojiLabel" extends="Group">
+    <script type="text/brightscript" uri="EmojiLabel.brs" />
+    <script type="text/brightscript" uri="pkg:/source/util/Regex.brs" />
+    <script type="text/brightscript" uri="pkg:/source/util/Utilities.brs" />
+
+    <interface>
+        <!-- Set to the text to display. The text will be searched for emoji characters, and those characters will be
+        replaced with posters referencing the Twemoji character instead. See Twemoji project for more information: 
+        https://twemoji.twitter.com/-->
+        <field id="text" type="String" />
+        <!-- The color for the text. Does not change the emojis. -->
+        <field id="color" type="Color" value="0xddddddff" />
+        <!-- The font to use for text rendering. Has no effect on the emojis. -->
+        <field id="font" type="Node" />
+        <!-- The total width for the label to take up. If the components exceede this width, the last label will use an 
+        ellipsis. If there is not enough space and an emoji character is the last component, it will not display. -->
+        <field id="width" type="Integer" value="0" />
+        <!-- The size to use for emoji rendering in the label. Note that emojis are always square icons, so this value 
+        will be used for both the width and height. See height value above for more detail. -->
+        <field id="emojiSize" type="Integer" value="0" />
+        <!-- The maximum number of lines of text to display, or all of them if set to zero -->
+        <field id="maxLines" type="Integer" value="0" />
+        <!-- The spacing between lines -->
+        <field id="lineSpacing" type="Integer" value="0" />
+        
+        <!-- Returns all label and poster nodes used to render the EmojiLabel. This allows finer tuned properties if needed,
+        such as substituting the emoji poster's uri path for your own. -->
+        <function name="getAllComponents" />
+    </interface>
+    <children>
+        <LayoutGroup
+            id="layout"
+            layoutDirection="vert"
+        />
+    </children>
+</component>
