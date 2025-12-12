@@ -2,12 +2,7 @@
 ' https://github.com/KasperGam/EmojiOnRoku/blob/main/LICENSE
 sub init()
     m.components = m.top.findNode("layout")
-
     m.top.observeField("text", "setText")
-    m.top.observeField("maxLines", "setText")
-    m.top.observeField("width", "setText")
-    m.top.observeField("font", "setText")
-    m.top.observeField("emojiSize", "setText")
 
     m.top.observeField("color", "updateComponents")
     m.top.observeField("lineSpacing", "updateComponents")
@@ -19,7 +14,6 @@ end sub
 function updateComponents()
     ' Only update components if we are actually rendering text
     if m.top.text <> ""
-        
         ' Set default line spacing to something reasonable
         if m.top.lineSpacing = 0
             m.components.itemSpacings = [ m.top.emojiSize / 4 ]
@@ -190,7 +184,7 @@ function getAllComponents()
     return components
 end function
 
-' Removes all child components to reset the layout group.
+' Removes all lines to reset the layout group.
 function resetComponents()
     while m.components.getChildCount() > 0
         m.components.removeChildIndex(0)
