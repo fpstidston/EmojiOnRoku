@@ -7,26 +7,44 @@ sub init()
     m.top.observeField("font", "setText")
     m.top.observeField("maxLines", "setText")
     m.top.observeField("emojiSize", "setText")
+    m.top.observeField("lineSpacing", "setText")
+    m.top.observeField("height", "setText")
 
     m.top.observeField("color", "updateComponents")
-    m.top.observeField("lineSpacing", "updateComponents")
 
-    ' If the emoji size is not set initiliase to a sample of the font height
+    ' Set default line spacing
+    label = createLabel("Sample")
+    m.lineHeight = label.boundingRect().height
+    lineSpacing = m.top.lineSpacing
+    if lineSpacing = 0
+        lineSpacing =  m.lineHeight / 4
+        m.components.itemSpacings = [ lineSpacing ]
+    else
+        m.components.itemSpacings = lineSpacing
+    end if
+
+    ' Set default emoji size
     if m.top.emojiSize = 0
-        label = createLabel("Sample")
-        m.top.emojiSize = label.boundingRect().height
+        m.top.emojiSize = m.lineHeight
     end if
 end sub
 
-' Updates only fields that have no effect on layout
+' Updates only fields that have no effect on line breaks
 function updateComponents()
-    ' Only update components if we are actually rendering text
-    if m.top.text <> ""
-        ' Set default line spacing to something reasonable
-        if m.top.lineSpacing = 0
-            m.components.itemSpacings = [ m.top.emojiSize / 4 ]
+    height = m.top.height
+    if height > 0
+        if m.top.vertAlign = "center"
+            m.components.vertAlignment = "center"
+            midPointY = height / 2
+            m.components.translation = [0, midPointY]
+        else if m.top.vertAlign = "bottom"
+            m.components.vertAlignment = "bottom"
+            m.components.translation = [0, height]
         end if
+    end if
 
+    ' Only update color if we are actually rendering text
+    if m.top.text <> ""
         comps = getAllComponents()
         for each comp in comps
             if comp.subtype() = "Label"
@@ -42,14 +60,14 @@ function setText()
 
     ' This tracks the horizontal and vertical progress of the function
     cursor = {
-        currWidth: 0
-        currLine: Invalid
+        curWidth: 0
+        curLine: Invalid
     }
 
     resetComponents()
 
     if labelText <> ""
-        cursor.currLine = createLine(cursor.currLine)
+        cursor.curLine = createLine(cursor.curLine, Invalid)
         ' Check for emojis in this text
         emojiRegex = createObject("roRegex", regex(), "m")
         matches = emojiRegex.matchAll(labelText)
@@ -103,6 +121,10 @@ function createLabel(withText as String)
         label.font = m.top.font
     end if
 
+    if m.top.emojiSize = 0
+        m.top.emojiSize = label.boundingRect().height
+    end if
+
     return label
 end function
 
@@ -121,20 +143,28 @@ function createPoster(uri as String)
 end function
 
 ' Create a new line in the multi-line label
-function createLine(currLine)
+function createLine(curLine, comp)
+    height = m.top.height
     numLines = m.components.getChildCount()
+    maxLines = m.top.maxLines
+    
+    curHeight = m.components.boundingRect().height
+    curHeight += m.lineHeight + m.top.lineSpacing
+    newlineExceedsHeight = height > 0 and curHeight > height
+    newlineExceedsMaxLines = maxLines > 0 and numLines = maxLines
 
-    ' If a maximum number of lines set and is reached
-    if m.top.maxLines <> 0  and numLines = m.top.maxLines
-        ' Replace last node with an ellipsis
-        lastNodeIndex = currLine.getChildCount() - 1
-        if lastNodeIndex >= 0
-            lastNode = currLine.getChild(lastNodeIndex)
-            currLine.removeChild(lastNode)
+    ' If a height is set and new line would exceed it or a maximum number of lines is set and is reached
+    if newlineExceedsHeight or newlineExceedsMaxLines
+        ' Ensure the last component ends with an ellipsis
+        if comp <> invalid
+            truncateNode(curLine, comp)
+        else
+            ' If there is a new line character rendered as an empty line
+            ellipsis = createLabel("…")
+            curLine.appendChild(ellipsis)
         end if
-        ellipsis = createLabel("…")
-        currLine.appendChild(ellipsis)
 
+        ' Tell calling function to stop drawing new lines
         return Invalid
     end if
 
@@ -147,6 +177,46 @@ function createLine(currLine)
     return line
 end function
 
+function truncateNode(curLine, comp)
+    ' See if the next component to be added extends beyond the available width
+    width = m.top.width
+    compWidth = comp.boundingRect().width
+    curWidth = curLine.boundingRect().width + compWidth
+
+    if curWidth > width and width > 0
+        diff = curWidth - width
+
+        ellipsis = createLabel("…")
+        minWidth = ellipsis.boundingRect().width
+        ' For labels, we might be able to have the label use proper ellipsis by itself
+        if comp.subType() = "Label"
+            compNewWidth = compWidth - diff
+            ' If the label is too short to have an ellipsis itself, insert one here
+            if compNewWidth <= minWidth
+                ' Remove the last added component
+                lastCompIndex = curLine.getChildCount() - 1
+                lastComp = curLine.getChild(lastCompIndex)
+                curLine.removeChild(lastComp)
+                if lastComp.subType() = "Label"
+                    ' Extend the last label that fits so that it does not fit and add it using truncate
+                    lastComp.text += "…"
+                    truncateNode(curLine, lastComp)
+                else
+                    ' Replace emoji with ellipsis
+                    curLine.appendChild(ellipsis)
+                end if
+            else
+                ' Label will use ellipsis with explicit width set
+                comp.width = compNewWidth
+                curLine.appendChild(comp)
+            end if
+        else
+            ' Replace emoji with ellipsis
+            curLine.appendChild(ellipsis)          
+        end if
+    end if
+end function
+
 ' Arrange the words horizontally with breaks to new line
 function distributeWords(text, cursor)
     regex = CreateObject("roRegex", "\n", "gm")
@@ -155,9 +225,9 @@ function distributeWords(text, cursor)
     wordsArr = replacedNewlines.split(" ")
     for each word in wordsArr
         if word = "__NEW_LINE__"
-            cursor.currLine = createLine(cursor.currLine)
-            cursor.currWidth = 0
-            if cursor.currLine = Invalid
+            cursor.curLine = createLine(cursor.curLine, Invalid)
+            cursor.curWidth = 0
+            if cursor.curLine = Invalid
                 return Invalid
             end if
         else
@@ -174,19 +244,18 @@ function distributeWords(text, cursor)
 end function
 
 ' Incremenet the current width and create a new line if necessary
-function updateCursor(cursor, node)
-    width = node.boundingRect().width
-    cursor.currWidth += width
-    
-    if cursor.currWidth > m.top.width and m.top.width > 0
-        cursor.currLine = createLine(cursor.currLine)
-        cursor.currWidth = width
-        if cursor.currLine = Invalid
+function updateCursor(cursor, comp)
+    width = comp.boundingRect().width
+    cursor.curWidth += width
+
+    if cursor.curWidth > m.top.width and m.top.width > 0
+        cursor.curLine = createLine(cursor.curLine, comp)
+        cursor.curWidth = width
+        if cursor.curLine = Invalid
             return Invalid
         end if
     end if
-
-    cursor.currLine.appendChild(node)
+    cursor.curLine.appendChild(comp)
 
     return cursor
 end function

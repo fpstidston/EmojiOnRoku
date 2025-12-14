@@ -20,9 +20,12 @@ Use as an ordinary Scenegraph Label node, with the following exceptions:
         <field id="color" type="Color" value="0xddddddff" />
         <!-- The font to use for text rendering. Has no effect on the emojis. -->
         <field id="font" type="Node" />
-        <!-- The total width for the label to take up. If the components exceede this width, the last label will use an 
-        ellipsis. If there is not enough space and an emoji character is the last component, it will not display. -->
+        <!-- The total width for the label to take up. If the components exceed this width, the last label will use an 
+        ellipsis. -->
         <field id="width" type="Integer" value="0" />
+         <!-- The total height for the label to take up. If the components exceed this width, the last label will use an 
+        ellipsis. Required for use with vertical alignment -->
+        <field id="height" type="Integer" value="0" />
         <!-- The size to use for emoji rendering in the label. Note that emojis are always square icons, so this value 
         will be used for both the width and height. See height value above for more detail. -->
         <field id="emojiSize" type="Integer" value="0" />
@@ -30,7 +33,8 @@ Use as an ordinary Scenegraph Label node, with the following exceptions:
         <field id="maxLines" type="Integer" value="0" />
         <!-- The spacing between lines -->
         <field id="lineSpacing" type="Integer" value="0" />
-        
+        <!-- The vetical aligment setting can be top center or bottom. Requires height to be set -->
+        <field id="vertAlign" type="String" value="top" />
         <!-- Returns all label and poster nodes used to render the EmojiLabel. This allows finer tuned properties if needed,
         such as substituting the emoji poster's uri path for your own. -->
         <function name="getAllComponents" />
